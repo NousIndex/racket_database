@@ -9,7 +9,7 @@ export default function BrowsePage() {
         <div className="max-w-4xl">
           <div className="font-sans text-[11px] tracking-widest uppercase text-accent mb-3">A Field Guide</div>
           <h1 className="text-4xl md:text-6xl font-serif font-normal tracking-tight leading-[1.05]">
-            Pick the racket that picks the rally.
+            Discover your perfect racket.
           </h1>
           <p className="mt-4 font-serif text-lg text-dim max-w-2xl leading-relaxed">
             Every spec, sourced and attributed. {rackets.length} rackets, lined up so the differences read like a poem — quiet and exact.
