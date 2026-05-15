@@ -4,7 +4,7 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'The Racket Companion',
+  title: 'Racket Database',
   description: 'A field guide to badminton rackets — every spec, sourced.',
 };
 
@@ -29,7 +29,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <header className="border-b border-rule bg-paper">
           <div className="max-w-7xl mx-auto px-6 md:px-12 py-6 flex items-baseline justify-between">
             <Link href="/" className="font-serif italic text-xl md:text-2xl font-semibold tracking-tight no-underline">
-              The Racket Companion
+              Racket Database
             </Link>
             <nav className="font-sans text-[11px] tracking-widest uppercase text-dim flex items-center gap-6">
               <Link href="/" className="hover:text-ink">Browse</Link>

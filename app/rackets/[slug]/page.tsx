@@ -25,7 +25,7 @@ export async function generateMetadata(
   const r = getRacketBySlug(slug);
   if (!r) return { title: 'Not found' };
   return {
-    title: `${r.brand} ${r.displayName} — The Racket Companion`,
+    title: `${r.brand} ${r.displayName} — Racket Database`,
     description: Object.values(r.descriptions || {})[0]?.slice(0, 160),
   };
 }

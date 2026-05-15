@@ -51,9 +51,9 @@ export default async function ComparePage({ searchParams }: Props) {
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
   const { ids } = await searchParams;
   const rackets = getRacketsBySlugs(parseIds(ids)).slice(0, 4);
-  if (rackets.length < 2) return { title: 'Compare — The Racket Companion' };
+  if (rackets.length < 2) return { title: 'Compare — Racket Database' };
   return {
-    title: `${rackets.map((r) => r.displayName).join(' vs ')} — The Racket Companion`,
+    title: `${rackets.map((r) => r.displayName).join(' vs ')} — Racket Database`,
   };
 }
 

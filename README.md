@@ -1,4 +1,4 @@
-# The Racket Companion
+# Racket Database
 
 A static-data Next.js site that browses, details, and compares badminton rackets from the `rackets.json` scraper output. Editorial spec-sheet aesthetic — serif headlines, source-attributed values, side-by-side diff comparison for up to 4 rackets.
 
