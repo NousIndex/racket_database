@@ -1,0 +1,116 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --color-paper: 250 250 247;       /* #fafaf7 cream */
+  --color-ink: 26 26 26;            /* #1a1a1a near-black */
+  --color-dim: 122 122 114;         /* #7a7a72 warm gray */
+  --color-rule: 230 227 220;        /* #e6e3dc light tan */
+  --color-sheet: 255 255 255;       /* #ffffff white panel */
+  --color-highlight: 246 239 222;   /* #f6efde cream diff */
+  --color-accent: 184 69 31;        /* #b8451f rust */
+  --color-tier-dst-bg: 231 229 222;  /* stone-200 */
+  --color-tier-dst-fg: 87 83 78;     /* stone-700 */
+  --color-tier-ret-bg: 245 244 240;  /* stone-100 */
+  --color-tier-ret-fg: 120 113 108;  /* stone-500 */
+}
+
+.dark {
+  color-scheme: dark;
+  --color-paper: 22 20 15;          /* warm near-black */
+  --color-ink: 236 235 226;         /* warm bone */
+  --color-dim: 154 153 144;         /* warm light gray */
+  --color-rule: 45 42 35;           /* warm dark border */
+  --color-sheet: 31 29 23;          /* slightly raised dark */
+  --color-highlight: 60 49 28;      /* warm dark amber for diff */
+  --color-accent: 232 132 82;       /* warmer brighter rust */
+  --color-tier-dst-bg: 51 47 41;
+  --color-tier-dst-fg: 200 195 184;
+  --color-tier-ret-bg: 38 35 30;
+  --color-tier-ret-fg: 142 138 130;
+}
+
+html, body {
+  background: rgb(var(--color-paper));
+  color: rgb(var(--color-ink));
+  font-family: theme('fontFamily.serif');
+}
+
+/* Subtle focus ring */
+*:focus-visible {
+  outline: 2px solid rgb(var(--color-accent));
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+a {
+  color: inherit;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Tier swatches that flip with theme */
+.tier-dst-bg { background-color: rgb(var(--color-tier-dst-bg)); }
+.tier-dst-fg { color: rgb(var(--color-tier-dst-fg)); }
+.tier-ret-bg { background-color: rgb(var(--color-tier-ret-bg)); }
+.tier-ret-fg { color: rgb(var(--color-tier-ret-fg)); }
+.tier-rule-soft { border-color: rgb(var(--color-tier-dst-bg)); }
+
+/* Theme-swap animation
+   ------------------------------------------------------------------
+   Only active while the `theme-transitioning` class is on <html>.
+   Scoped this way so normal hover/focus transitions remain snappy.
+   The ThemeToggle script adds the class, swaps `dark`, then removes
+   it after the duration below. */
+.theme-transitioning,
+.theme-transitioning *,
+.theme-transitioning *::before,
+.theme-transitioning *::after {
+  transition:
+    background-color 320ms ease,
+    border-color 320ms ease,
+    color 320ms ease,
+    fill 320ms ease,
+    stroke 320ms ease,
+    box-shadow 320ms ease !important;
+}
+
+/* Honour reduced-motion preferences. */
+@media (prefers-reduced-motion: reduce) {
+  .theme-transitioning,
+  .theme-transitioning *,
+  .theme-transitioning *::before,
+  .theme-transitioning *::after {
+    transition: none !important;
+  }
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none !important;
+  }
+}
+
+/* When the browser supports View Transitions, fade the old/new roots. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 320ms;
+  animation-timing-function: ease;
+  mix-blend-mode: normal;
+}
+::view-transition-old(root) {
+  animation-name: theme-fade-out;
+}
+::view-transition-new(root) {
+  animation-name: theme-fade-in;
+}
+@keyframes theme-fade-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+@keyframes theme-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
