@@ -20,14 +20,14 @@ export function ImageCarousel({ images, alt }: Props) {
 
   return (
     <div>
-      <div className="aspect-[4/3] bg-sheet border border-rule grid place-items-center overflow-hidden">
+      <div className="relative aspect-[4/3] bg-sheet border border-rule overflow-hidden">
         <Image
           key={images[active]}
           src={images[active]}
           alt={alt}
-          width={800}
-          height={600}
-          className="max-w-[92%] max-h-[92%] object-contain"
+          fill
+          sizes="(max-width: 768px) 100vw, 50vw"
+          className="object-contain p-[4%]"
           priority
           unoptimized
         />
@@ -42,11 +42,11 @@ export function ImageCarousel({ images, alt }: Props) {
                 aria-selected={i === active}
                 aria-label={`Image ${i + 1} of ${images.length}`}
                 onClick={() => setActive(i)}
-                className={`w-16 h-16 bg-sheet border grid place-items-center overflow-hidden transition ${
+                className={`relative w-16 h-16 bg-sheet border overflow-hidden transition ${
                   i === active ? 'border-accent ring-1 ring-accent' : 'border-rule hover:border-ink'
                 }`}
               >
-                <Image src={src} alt="" width={64} height={64} className="max-w-[88%] max-h-[88%] object-contain" unoptimized />
+                <Image src={src} alt="" fill sizes="64px" className="object-contain p-[6%]" unoptimized />
               </button>
             </li>
           ))}
