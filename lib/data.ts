@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { cache } from 'react';
 import type { RawRacket, Racket } from './types';
-import { cleanModelName, normalizeBalance, normalizeFlex } from './normalize';
+import { cleanModelName, normalizeBalance, normalizeFlex, promoteRawSpecs } from './normalize';
 import { getValue } from './sourced';
 import { makeSlug } from './slug';
 
@@ -23,12 +23,15 @@ export const getRackets = cache((): Racket[] => {
     slugCount.set(base, n + 1);
     const slug = n === 0 ? base : `${base}-${n + 1}`;
 
+    const { overrides, remainingRawSpecs } = promoteRawSpecs(r);
+    const merged = { ...r, ...overrides, raw_specs: remainingRawSpecs };
+
     return {
-      ...r,
+      ...merged,
       slug,
       displayName: cleanModelName(r.model) || r.model,
-      balanceCategory: normalizeBalance(getValue(r.balance)),
-      flexCategory: normalizeFlex(getValue(r.shaft_flex)),
+      balanceCategory: normalizeBalance(getValue(merged.balance)),
+      flexCategory: normalizeFlex(getValue(merged.shaft_flex)),
     };
   });
 });

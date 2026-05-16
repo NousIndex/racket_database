@@ -1,4 +1,4 @@
-import type { BalanceCategory, FlexCategory, Sourced } from './types';
+import type { BalanceCategory, FlexCategory, RawRacket, Sourced } from './types';
 
 // Whitelist of recognized balance values (after lowercasing/trimming).
 // Anything not in this map is treated as polluted scraper output and dropped.
@@ -71,4 +71,131 @@ export function normalizedSourced<T>(
     rawValue: raw,
     valid: raw != null && v != null,
   };
+}
+
+// Some scrapers (e.g. hundred_my) dump everything into raw_specs instead of the
+// structured fields. Map known raw keys → structured fields so they appear in
+// the main spec table rather than only under "Additional details".
+type ScalarField =
+  | 'balance' | 'shaft_flex' | 'player_type' | 'product_tier' | 'series'
+  | 'string_pattern' | 'racquet_length' | 'stringing_advice' | 'parent_sku'
+  | 'performance';
+type ArrayField = 'materials' | 'tech_specs';
+
+const SCALAR_KEY_MAP: Record<string, ScalarField> = {
+  'balance': 'balance',
+  'shaft flex': 'shaft_flex',
+  'flex': 'shaft_flex',
+  'flexibility': 'shaft_flex',
+  'tahap kekerasan': 'shaft_flex',
+  'player type': 'player_type',
+  'playing style': 'player_type',
+  'player level': 'product_tier',
+  'level': 'product_tier',
+  'series': 'series',
+  'product range': 'series',
+  'string pattern': 'string_pattern',
+  'length': 'racquet_length',
+  'racket length': 'racquet_length',
+  'racquet length': 'racquet_length',
+  'total length': 'racquet_length',
+  'stringing': 'stringing_advice',
+  'string tension': 'stringing_advice',
+  'tension': 'stringing_advice',
+  'maximum racket tension': 'stringing_advice',
+  'ketegangan tali': 'stringing_advice',
+  'parent sku': 'parent_sku',
+  'sku': 'parent_sku',
+  'performance': 'performance',
+};
+
+const ARRAY_KEY_MAP: Record<string, ArrayField> = {
+  'material': 'materials',
+  'materials': 'materials',
+  'bahan bingkai': 'materials',
+  'technologies': 'tech_specs',
+  'tech specs': 'tech_specs',
+};
+
+const WEIGHT_KEYS = new Set(['weight', 'weight g', 'unstrung weight', 'berat']);
+const GRIP_KEYS = new Set(['racket grip size', 'grip size', 'saiz grip']);
+
+function normalizeKey(k: string): string {
+  return k.trim().toLowerCase().replace(/[\s_-]+/g, ' ');
+}
+
+type Overrides = Partial<Pick<RawRacket,
+  | 'balance' | 'shaft_flex' | 'player_type' | 'product_tier' | 'series'
+  | 'string_pattern' | 'racquet_length' | 'stringing_advice' | 'parent_sku'
+  | 'performance' | 'materials' | 'tech_specs' | 'weight_grip_options'
+>>;
+
+export function promoteRawSpecs(r: RawRacket): {
+  overrides: Overrides;
+  remainingRawSpecs: RawRacket['raw_specs'];
+} {
+  const overrides: Overrides = {};
+  // "<source>::<original_key>" entries to strip from raw_specs.
+  const promotedKeys = new Set<string>();
+
+  for (const [source, specs] of Object.entries(r.raw_specs || {})) {
+    let weightVal: string | null = null;
+    let gripVal: string | null = null;
+    const weightOrGripKeys: string[] = [];
+
+    for (const [origKey, rawVal] of Object.entries(specs || {})) {
+      const val = typeof rawVal === 'string' ? rawVal.trim() : null;
+      if (!val) continue;
+      const key = normalizeKey(origKey);
+
+      if (WEIGHT_KEYS.has(key)) {
+        if (!weightVal) weightVal = val;
+        weightOrGripKeys.push(origKey);
+        continue;
+      }
+      if (GRIP_KEYS.has(key)) {
+        if (!gripVal) gripVal = val;
+        weightOrGripKeys.push(origKey);
+        continue;
+      }
+
+      const scalar = SCALAR_KEY_MAP[key];
+      if (scalar) {
+        const current = overrides[scalar] ?? r[scalar];
+        if (current?.value != null) continue;
+        overrides[scalar] = { value: val, source };
+        promotedKeys.add(`${source}::${origKey}`);
+        continue;
+      }
+
+      const arr = ARRAY_KEY_MAP[key];
+      if (arr) {
+        const current = overrides[arr] ?? r[arr];
+        if (current?.value != null) continue;
+        overrides[arr] = { value: [val], source };
+        promotedKeys.add(`${source}::${origKey}`);
+      }
+    }
+
+    const existingWGO = overrides.weight_grip_options ?? r.weight_grip_options;
+    if (!existingWGO?.value && (weightVal || gripVal)) {
+      const combined = weightVal && gripVal
+        ? `${weightVal} / ${gripVal}`
+        : (weightVal ?? gripVal!);
+      overrides.weight_grip_options = { value: [combined], source };
+      for (const k of weightOrGripKeys) promotedKeys.add(`${source}::${k}`);
+    }
+  }
+
+  // Rebuild raw_specs without the promoted keys.
+  const remainingRawSpecs: RawRacket['raw_specs'] = {};
+  for (const [source, specs] of Object.entries(r.raw_specs || {})) {
+    const remaining: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(specs || {})) {
+      if (!promotedKeys.has(`${source}::${k}`)) remaining[k] = v;
+    }
+    if (Object.keys(remaining).length > 0) remainingRawSpecs[source] = remaining;
+  }
+
+  return { overrides, remainingRawSpecs };
 }
