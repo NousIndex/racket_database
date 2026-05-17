@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { CurrencySelector } from '@/components/CurrencySelector';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -34,6 +35,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <nav className="font-sans text-[11px] tracking-widest uppercase text-dim flex items-center gap-6">
               <Link href="/" className="hover:text-ink">Browse</Link>
               <Link href="/compare" className="hover:text-ink">Compare</Link>
+              <CurrencySelector />
               <ThemeToggle />
             </nav>
           </div>

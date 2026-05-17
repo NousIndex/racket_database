@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Racket } from '@/lib/types';
-import { getValue } from '@/lib/sourced';
 import { fmtPriceNumeric } from '@/lib/format';
+import { useCurrency } from '@/lib/useCurrency';
+import { DEFAULT_CURRENCY, symbolFor } from '@/lib/currency';
 import { RacketRow } from './RacketRow';
 import { RacketCard } from './RacketCard';
 import { RacketTable } from './RacketTable';
@@ -17,22 +18,25 @@ interface Props {
   rackets: Racket[];
 }
 
-const ALL = 'All';
-
 export function BrowseClient({ rackets }: Props) {
+  const { currency, rates, hydrated } = useCurrency();
+  const cur = hydrated ? currency : undefined;
+  const ratesArg = hydrated ? rates : undefined;
+
   const priceCeiling = useMemo(() => {
     let max = 0;
     rackets.forEach((r) => {
-      const pr = getValue(r.price_min) ?? 0;
-      if (pr > max) max = pr;
+      const pr = fmtPriceNumeric(r, cur, ratesArg);
+      if (Number.isFinite(pr) && pr > max) max = pr;
     });
-    return Math.ceil(max / 25) * 25 || 400;
-  }, [rackets]);
+    const step = max > 1000 ? 100 : 25;
+    return Math.ceil(max / step) * step || 400;
+  }, [rackets, cur, ratesArg]);
 
-  const [brand, setBrand] = useState<string>(ALL);
-  const [balance, setBalance] = useState<string>(ALL);
-  const [flex, setFlex] = useState<string>(ALL);
-  const [style, setStyle] = useState<string>(ALL);
+  const [brand, setBrand] = useState<Set<string>>(new Set());
+  const [balance, setBalance] = useState<Set<string>>(new Set());
+  const [flex, setFlex] = useState<Set<string>>(new Set());
+  const [style, setStyle] = useState<Set<string>>(new Set());
   const [maxPrice, setMaxPrice] = useState<number>(priceCeiling);
   const [sort, setSort] = useState<SortKey>('brand-desc');
   const [query, setQuery] = useState('');
@@ -46,6 +50,12 @@ export function BrowseClient({ rackets }: Props) {
   useEffect(() => {
     window.localStorage.setItem(VIEW_STORAGE_KEY, view);
   }, [view]);
+
+  // When the currency (or live rates) shift, reset the slider to the new ceiling
+  // so a prior value in a different unit doesn't silently exclude rackets.
+  useEffect(() => {
+    setMaxPrice(priceCeiling);
+  }, [priceCeiling]);
 
   const facets = useMemo(() => {
     const brands = new Set<string>();
@@ -66,17 +76,28 @@ export function BrowseClient({ rackets }: Props) {
     };
   }, [rackets]);
 
+  const activeFilterCount =
+    brand.size + balance.size + flex.size + style.size + (maxPrice < priceCeiling ? 1 : 0);
+
+  const clearAll = () => {
+    setBrand(new Set());
+    setBalance(new Set());
+    setFlex(new Set());
+    setStyle(new Set());
+    setMaxPrice(priceCeiling);
+  };
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     const list = rackets.filter((r) => {
-      if (brand !== ALL && r.brand !== brand) return false;
-      if (balance !== ALL && r.balanceCategory !== balance) return false;
-      if (flex !== ALL && r.flexCategory !== flex) return false;
-      if (style !== ALL && r.styleCategory !== style) return false;
-      const pr = getValue(r.price_min) ?? 0;
-      if (pr > maxPrice) return false;
+      if (brand.size > 0 && !brand.has(r.brand)) return false;
+      if (balance.size > 0 && (!r.balanceCategory || !balance.has(r.balanceCategory))) return false;
+      if (flex.size > 0 && (!r.flexCategory || !flex.has(r.flexCategory))) return false;
+      if (style.size > 0 && (!r.styleCategory || !style.has(r.styleCategory))) return false;
+      const pr = fmtPriceNumeric(r, cur, ratesArg);
+      if (Number.isFinite(pr) && pr > maxPrice) return false;
       if (q) {
-        const hay = `${r.brand} ${r.displayName} ${getValue(r.series) ?? ''}`.toLowerCase();
+        const hay = `${r.brand} ${r.displayName} ${r.series?.value ?? ''}`.toLowerCase();
         if (!hay.includes(q)) return false;
       }
       return true;
@@ -85,36 +106,38 @@ export function BrowseClient({ rackets }: Props) {
       if (sort === 'brand-asc') return a.brand.localeCompare(b.brand) || a.displayName.localeCompare(b.displayName);
       if (sort === 'brand-desc') return b.brand.localeCompare(a.brand) || a.displayName.localeCompare(b.displayName);
       if (sort === 'model') return a.displayName.localeCompare(b.displayName);
-      if (sort === 'price-asc') return fmtPriceNumeric(a) - fmtPriceNumeric(b);
-      if (sort === 'price-desc') return fmtPriceNumeric(b) - fmtPriceNumeric(a);
+      if (sort === 'price-asc') return fmtPriceNumeric(a, cur, ratesArg) - fmtPriceNumeric(b, cur, ratesArg);
+      if (sort === 'price-desc') return fmtPriceNumeric(b, cur, ratesArg) - fmtPriceNumeric(a, cur, ratesArg);
       return 0;
     });
     return list;
-  }, [rackets, brand, balance, flex, style, maxPrice, sort, query]);
+  }, [rackets, brand, balance, flex, style, maxPrice, sort, query, cur, ratesArg]);
 
   return (
     <>
       <div className="border-y border-rule bg-paper">
         <div className="max-w-7xl mx-auto px-6 md:px-12 py-4 flex flex-wrap gap-x-5 gap-y-3 items-center font-sans text-sm">
-          <Field label="Brand" value={brand} onChange={setBrand} options={[ALL, ...facets.brands]} />
-          <Field label="Balance" value={balance} onChange={setBalance} options={[ALL, ...facets.balances]} />
-          <Field label="Flex" value={flex} onChange={setFlex} options={[ALL, ...facets.flexes]} />
-          <Field label="Style" value={style} onChange={setStyle} options={[ALL, ...facets.styles]} />
+          <MultiField label="Brand" selected={brand} onChange={setBrand} options={facets.brands} />
+          <MultiField label="Balance" selected={balance} onChange={setBalance} options={facets.balances} />
+          <MultiField label="Flex" selected={flex} onChange={setFlex} options={facets.flexes} />
+          <MultiField label="Style" selected={style} onChange={setStyle} options={facets.styles} />
           <label className="flex items-center gap-2">
             <span className="text-dim">Max price</span>
             <input
               type="range"
-              min={25}
+              min={Math.max(5, Math.round(priceCeiling / 50))}
               max={priceCeiling}
-              step={5}
+              step={priceCeiling > 1000 ? 25 : 5}
               value={maxPrice}
               onChange={(e) => setMaxPrice(Number(e.target.value))}
               className="w-32"
               aria-label="Maximum price"
             />
-            <span className="tabular-nums w-14">${maxPrice}</span>
+            <span className="tabular-nums w-20">
+              {symbolFor(hydrated ? currency : DEFAULT_CURRENCY)}{maxPrice}
+            </span>
           </label>
-          <Field
+          <SingleField
             label="Sort"
             value={sort}
             onChange={(v) => setSort(v as SortKey)}
@@ -126,6 +149,15 @@ export function BrowseClient({ rackets }: Props) {
               { value: 'price-desc', label: 'Price ↓' },
             ]}
           />
+          {activeFilterCount > 0 && (
+            <button
+              type="button"
+              onClick={clearAll}
+              className="text-dim hover:text-accent underline underline-offset-2"
+            >
+              Clear filters ({activeFilterCount})
+            </button>
+          )}
           <div className="flex-1" />
           <ViewSwitcher view={view} onChange={setView} />
           <label className="flex items-center gap-2">
@@ -163,9 +195,9 @@ export function BrowseClient({ rackets }: Props) {
   );
 }
 
-type Option = string | { value: string; label: string };
+type SingleOption = { value: string; label: string };
 
-function Field({
+function SingleField({
   label,
   value,
   onChange,
@@ -174,7 +206,7 @@ function Field({
   label: string;
   value: string;
   onChange: (v: string) => void;
-  options: Option[];
+  options: SingleOption[];
 }) {
   return (
     <label className="flex items-center gap-2">
@@ -184,13 +216,111 @@ function Field({
         onChange={(e) => onChange(e.target.value)}
         className="px-2 py-1.5 border border-rule rounded bg-sheet"
       >
-        {options.map((o) => {
-          const v = typeof o === 'string' ? o : o.value;
-          const l = typeof o === 'string' ? o : o.label;
-          return <option key={v} value={v}>{l}</option>;
-        })}
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>{o.label}</option>
+        ))}
       </select>
     </label>
+  );
+}
+
+function MultiField({
+  label,
+  selected,
+  onChange,
+  options,
+}: {
+  label: string;
+  selected: Set<string>;
+  onChange: (next: Set<string>) => void;
+  options: string[];
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+
+  const toggle = (v: string) => {
+    const next = new Set(selected);
+    if (next.has(v)) next.delete(v);
+    else next.add(v);
+    onChange(next);
+  };
+
+  const count = selected.size;
+  const summary =
+    count === 0
+      ? 'All'
+      : count === 1
+        ? Array.from(selected)[0]
+        : `${count} selected`;
+
+  return (
+    <div ref={ref} className="relative flex items-center gap-2">
+      <span className="text-dim">{label}</span>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        className={`px-2 py-1.5 border rounded bg-sheet flex items-center gap-1.5 min-w-[7rem] text-left ${
+          count > 0 ? 'border-accent text-accent' : 'border-rule'
+        }`}
+      >
+        <span className="truncate max-w-[10rem]">{summary}</span>
+        <span aria-hidden="true" className="text-dim text-xs">▾</span>
+      </button>
+      {open && (
+        <div
+          role="listbox"
+          aria-multiselectable="true"
+          className="absolute z-30 top-full left-0 mt-1 bg-sheet border border-rule rounded shadow-lg max-h-72 overflow-y-auto min-w-[12rem]"
+        >
+          {count > 0 && (
+            <button
+              type="button"
+              onClick={() => onChange(new Set())}
+              className="block w-full text-left px-3 py-1.5 text-dim hover:bg-paper border-b border-rule text-xs uppercase tracking-wider"
+            >
+              Clear
+            </button>
+          )}
+          {options.map((o) => {
+            const isOn = selected.has(o);
+            return (
+              <label
+                key={o}
+                className={`flex items-center gap-2 px-3 py-1.5 cursor-pointer text-sm hover:bg-paper ${
+                  isOn ? 'text-accent' : ''
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={isOn}
+                  onChange={() => toggle(o)}
+                  className="accent-accent"
+                />
+                <span>{o}</span>
+              </label>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 

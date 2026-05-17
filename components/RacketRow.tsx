@@ -2,9 +2,10 @@ import Link from 'next/link';
 import Image from 'next/image';
 import type { Racket } from '@/lib/types';
 import { getValue } from '@/lib/sourced';
-import { fmt, fmtPrice } from '@/lib/format';
+import { fmt } from '@/lib/format';
 import { SourceBadge } from './SourceBadge';
 import { CompareButton } from './CompareButton';
+import { Price } from './Price';
 
 interface Props {
   racket: Racket;
@@ -18,8 +19,14 @@ export function RacketRow({ racket }: Props) {
   const firstImage = racket.image_urls?.[0];
 
   return (
-    <article className="grid grid-cols-[80px_1fr_auto] md:grid-cols-[112px_1fr_auto] gap-5 md:gap-7 py-6 border-b border-rule items-center">
-      <Link href={`/rackets/${racket.slug}`} className="block w-20 h-20 md:w-28 md:h-28 bg-sheet border border-rule grid place-items-center overflow-hidden">
+    <article className="group relative grid grid-cols-[80px_1fr_auto] md:grid-cols-[112px_1fr_auto] gap-5 md:gap-7 py-6 px-3 -mx-3 border-b border-rule items-center transition-colors hover:bg-sheet">
+      <Link
+        href={`/rackets/${racket.slug}`}
+        aria-label={`${racket.brand} ${racket.displayName}`}
+        className="absolute inset-0 z-0"
+      />
+
+      <div className="w-20 h-20 md:w-28 md:h-28 bg-sheet border border-rule grid place-items-center overflow-hidden">
         {firstImage ? (
           <Image
             src={firstImage}
@@ -33,17 +40,15 @@ export function RacketRow({ racket }: Props) {
         ) : (
           <span className="text-dim text-xs">No image</span>
         )}
-      </Link>
+      </div>
 
       <div className="min-w-0">
         <div className="font-sans text-[11px] tracking-wider uppercase text-dim mb-1">
           <SourceBadge source={racket.balance?.source ?? racket.price_min?.source} variant="dot" />
           <span className="ml-1.5">{racket.brand}{series ? ` · ${series}` : ''}</span>
         </div>
-        <h2 className="text-xl md:text-2xl font-serif font-medium tracking-tight">
-          <Link href={`/rackets/${racket.slug}`} className="hover:text-accent">
-            {racket.displayName}
-          </Link>
+        <h2 className="text-xl md:text-2xl font-serif font-medium tracking-tight transition-colors group-hover:text-accent">
+          {racket.displayName}
         </h2>
         <dl className="font-sans text-[13px] mt-2 flex flex-wrap gap-x-5 gap-y-1 text-dim">
           <div><dt className="inline">Balance</dt><dd className="inline ml-1.5 text-ink">{fmt(balance)}</dd></div>
@@ -52,8 +57,8 @@ export function RacketRow({ racket }: Props) {
         </dl>
       </div>
 
-      <div className="text-right font-sans flex flex-col items-end gap-2">
-        <div className="text-lg font-semibold tabular-nums">{fmtPrice(racket)}</div>
+      <div className="relative z-10 text-right font-sans flex flex-col items-end gap-2">
+        <Price racket={racket} className="text-lg font-semibold tabular-nums" />
         <CompareButton slug={racket.slug} />
       </div>
     </article>

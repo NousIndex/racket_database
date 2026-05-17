@@ -1,8 +1,9 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import type { Racket } from '@/lib/types';
-import { fmt, fmtPrice } from '@/lib/format';
+import { fmt } from '@/lib/format';
 import { CompareButton } from './CompareButton';
+import { Price } from './Price';
 
 interface Props {
   rackets: Racket[];
@@ -56,7 +57,7 @@ export function RacketTable({ rackets }: Props) {
                 <td className="py-2 px-2 whitespace-nowrap">{fmt(r.balanceCategory)}</td>
                 <td className="py-2 px-2 whitespace-nowrap">{fmt(r.flexCategory)}</td>
                 <td className="py-2 px-2 whitespace-nowrap">{fmt(r.styleCategory)}</td>
-                <td className="py-2 px-2 text-right tabular-nums whitespace-nowrap">{fmtPrice(r)}</td>
+                <td className="py-2 px-2 text-right tabular-nums whitespace-nowrap"><Price racket={r} /></td>
                 <td className="py-2 pl-2 pr-6 md:pr-12 text-right">
                   <CompareButton slug={r.slug} />
                 </td>

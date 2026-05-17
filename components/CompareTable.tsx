@@ -7,6 +7,7 @@ import type { Racket, Sourced } from '@/lib/types';
 import { getSource } from '@/lib/sourced';
 import { fmt, fmtPrice } from '@/lib/format';
 import { SourceBadge } from './SourceBadge';
+import { useCurrency } from '@/lib/useCurrency';
 
 type SourcedKey =
   | 'series' | 'product_tier' | 'balance' | 'shaft_flex' | 'player_type'
@@ -34,6 +35,9 @@ interface Props {
 
 export function CompareTable({ rackets }: Props) {
   const [diffsOnly, setDiffsOnly] = useState(false);
+  const { currency, rates, hydrated } = useCurrency();
+  const priced = (r: Racket) =>
+    hydrated ? fmtPrice(r, currency, rates) : fmtPrice(r);
 
   if (rackets.length < 2) {
     return (
@@ -61,7 +65,7 @@ export function CompareTable({ rackets }: Props) {
   });
 
   // Price row
-  const priceCells = rackets.map((r) => ({ display: fmtPrice(r), source: getSource(r.price_min) }));
+  const priceCells = rackets.map((r) => ({ display: priced(r), source: getSource(r.price_min) }));
   const priceDiffers = !priceCells.every((c) => c.display === priceCells[0].display);
 
   const visibleRows = diffsOnly ? rows.filter((r) => r.differs) : rows;
@@ -106,7 +110,7 @@ export function CompareTable({ rackets }: Props) {
                   </div>
                   <div className="font-sans text-[10px] tracking-wider uppercase text-dim mb-1">{r.brand}</div>
                   <div className="font-serif text-base md:text-lg font-medium leading-tight">{r.displayName}</div>
-                  <div className="font-sans text-xs text-accent font-semibold mt-2 tabular-nums">{fmtPrice(r)}</div>
+                  <div className="font-sans text-xs text-accent font-semibold mt-2 tabular-nums">{priced(r)}</div>
                 </Link>
               </div>
             ))}

@@ -3,10 +3,11 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { getRacketBySlug, getRackets } from '@/lib/data';
 import { getValue } from '@/lib/sourced';
-import { fmt, fmtPrice } from '@/lib/format';
+import { fmt } from '@/lib/format';
 import { ImageCarousel } from '@/components/ImageCarousel';
 import { SourceBadge } from '@/components/SourceBadge';
 import { CompareButton } from '@/components/CompareButton';
+import { Price } from '@/components/Price';
 import type { Racket, Sourced } from '@/lib/types';
 
 type SourcedKey =
@@ -76,9 +77,7 @@ export default async function RacketPage({ params }: { params: Promise<{ slug: s
           <h1 className="font-serif text-4xl md:text-5xl font-normal tracking-tight leading-[1.05]">
             {racket.displayName}
           </h1>
-          <div className="font-sans text-2xl text-accent font-semibold mt-4 tabular-nums">
-            {fmtPrice(racket)}
-          </div>
+          <Price racket={racket} className="font-sans text-2xl text-accent font-semibold mt-4 tabular-nums block" />
           <div className="mt-5">
             <CompareButton slug={racket.slug} />
           </div>

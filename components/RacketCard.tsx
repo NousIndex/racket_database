@@ -2,8 +2,9 @@ import Link from 'next/link';
 import Image from 'next/image';
 import type { Racket } from '@/lib/types';
 import { getValue } from '@/lib/sourced';
-import { fmt, fmtPrice } from '@/lib/format';
+import { fmt } from '@/lib/format';
 import { CompareButton } from './CompareButton';
+import { Price } from './Price';
 
 interface Props {
   racket: Racket;
@@ -49,7 +50,7 @@ export function RacketCard({ racket }: Props) {
         </h2>
         <div className="font-sans text-[11px] text-dim mt-auto pt-2">{fmt(specBits)}</div>
         <div className="flex items-center justify-between mt-1.5 gap-2">
-          <span className="font-sans font-semibold tabular-nums text-sm">{fmtPrice(racket)}</span>
+          <Price racket={racket} className="font-sans font-semibold tabular-nums text-sm" />
           <CompareButton slug={racket.slug} />
         </div>
       </div>
