@@ -21,10 +21,10 @@ export function CurrencySelector() {
         value={value}
         onChange={(e) => setCurrency(e.target.value as CurrencyCode)}
         aria-label="Display currency"
-        className="bg-transparent text-dim hover:text-ink uppercase tracking-widest text-[11px] cursor-pointer focus:outline-none"
+        className="bg-paper text-dim hover:text-ink uppercase tracking-widest text-[11px] cursor-pointer focus:outline-none"
       >
         {CURRENCIES.map((c) => (
-          <option key={c.code} value={c.code}>
+          <option key={c.code} value={c.code} className="bg-sheet text-ink normal-case tracking-normal">
             {c.code}
           </option>
         ))}
