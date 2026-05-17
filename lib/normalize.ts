@@ -1,49 +1,77 @@
-import type { BalanceCategory, FlexCategory, RawRacket, Sourced } from './types';
+import type { BalanceCategory, FlexCategory, RawRacket, Sourced, StyleCategory } from './types';
 
-// Whitelist of recognized balance values (after lowercasing/trimming).
-// Anything not in this map is treated as polluted scraper output and dropped.
+// Lookup keys for the maps below. Input is lowercased and any run of
+// dashes/underscores/spaces collapses to a single space, so "Head-Heavy",
+// "head_heavy", and "HEAD HEAVY" all hit the same entry.
+function categoryKey(s: string): string {
+  return s.trim().toLowerCase().replace(/[\s_-]+/g, ' ');
+}
+
+// Whitelist of recognized balance values. Anything not in this map is treated
+// as polluted scraper output and dropped (rendered as blank on the home page).
 const BALANCE_MAP: Record<string, BalanceCategory> = {
   'head heavy': 'Head Heavy',
-  'head-heavy': 'Head Heavy',
   'headheavy': 'Head Heavy',
+  'head heavy balance': 'Head Heavy',
   'hh': 'Head Heavy',
   'head light': 'Head Light',
-  'head-light': 'Head Light',
   'headlight': 'Head Light',
   'even': 'Even',
-  'even balanced': 'Even',
   'even balance': 'Even',
+  'even balanced': 'Even',
+  // Gosen's scale uses "Medium"/"Middle"/"Medium Balanced" for centered balance.
+  'medium': 'Even',
+  'middle': 'Even',
+  'medium balanced': 'Even',
   'normal': 'Normal',
   'slightly head heavy': 'Slightly Head Heavy',
-  'slightly head-heavy': 'Slightly Head Heavy',
+  'slight head heavy': 'Slightly Head Heavy',
   'slightly head light': 'Slightly Head Light',
-  'slightly head-light': 'Slightly Head Light',
 };
 
 const FLEX_MAP: Record<string, FlexCategory> = {
-  'hi-flex': 'Hi-Flex',
   'hi flex': 'Hi-Flex',
   'hiflex': 'Hi-Flex',
-  'flexible': 'Hi-Flex',
   'flex': 'Hi-Flex',
+  'flexible': 'Hi-Flex',
+  'flexibility': 'Hi-Flex',
+  'ultra flexible': 'Hi-Flex',
+  'soft': 'Hi-Flex',
+  'slight soft': 'Hi-Flex',
+  'extra soft': 'Hi-Flex',
   'medium': 'Medium',
   'med': 'Medium',
+  'mid flex': 'Medium',
+  // Li-Ning scale: Flexible / Medium Flexible / Medium / Stiff. The "Flexible"
+  // modifier softens medium but it still buckets closer to Medium than Hi-Flex.
+  'medium flexible': 'Medium',
   'stiff': 'Stiff',
+  // "Medium Stiff" / "Slight(ly) Stiff" sit between Medium and Stiff; the
+  // "Stiff" noun is dominant so they bucket up rather than down.
+  'medium stiff': 'Stiff',
+  'slight stiff': 'Stiff',
+  'slightly stiff': 'Stiff',
   'extra stiff': 'Extra Stiff',
-  'extra-stiff': 'Extra Stiff',
   'extrastiff': 'Extra Stiff',
 };
 
 export function normalizeBalance(raw: string | null | undefined): BalanceCategory | null {
   if (!raw) return null;
-  const key = raw.trim().toLowerCase();
-  return BALANCE_MAP[key] ?? null;
+  return BALANCE_MAP[categoryKey(raw)] ?? null;
 }
 
 export function normalizeFlex(raw: string | null | undefined): FlexCategory | null {
   if (!raw) return null;
-  const key = raw.trim().toLowerCase();
-  return FLEX_MAP[key] ?? null;
+  return FLEX_MAP[categoryKey(raw)] ?? null;
+}
+
+// Derive playing style from balance: head-heavy frames generate power,
+// head-light frames swing faster, centered frames are easier to control.
+export function inferStyle(balance: BalanceCategory | null): StyleCategory | null {
+  if (!balance) return null;
+  if (balance === 'Head Heavy' || balance === 'Slightly Head Heavy') return 'Power';
+  if (balance === 'Head Light' || balance === 'Slightly Head Light') return 'Speed';
+  return 'Control';
 }
 
 // Strip retail cruft from model names: " BADMINTON RACKET..." suffixes,

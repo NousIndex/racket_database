@@ -52,6 +52,11 @@ export type BalanceCategory =
 
 export type FlexCategory = 'Hi-Flex' | 'Medium' | 'Stiff' | 'Extra Stiff';
 
+// Derived from balance for the browse/filter UI — only 46 rackets carry an
+// explicit performance value, but balance is set for 266, so inferring gives
+// us much broader coverage with a consistent 3-bucket vocabulary.
+export type StyleCategory = 'Power' | 'Control' | 'Speed';
+
 export type SourceTier = 'manufacturer' | 'distributor' | 'retailer' | 'unknown';
 
 // A normalized racket: enums whitelisted, model name cleaned, slug attached.
@@ -61,4 +66,5 @@ export interface Racket extends RawRacket {
   displayName: string;
   balanceCategory: BalanceCategory | null;
   flexCategory: FlexCategory | null;
+  styleCategory: StyleCategory | null;
 }

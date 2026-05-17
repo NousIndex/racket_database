@@ -13,7 +13,7 @@ interface Props {
 export function RacketRow({ racket }: Props) {
   const balance = racket.balanceCategory;
   const flex = racket.flexCategory;
-  const perf = getValue(racket.performance);
+  const style = racket.styleCategory;
   const series = getValue(racket.series);
   const firstImage = racket.image_urls?.[0];
 
@@ -48,7 +48,7 @@ export function RacketRow({ racket }: Props) {
         <dl className="font-sans text-[13px] mt-2 flex flex-wrap gap-x-5 gap-y-1 text-dim">
           <div><dt className="inline">Balance</dt><dd className="inline ml-1.5 text-ink">{fmt(balance)}</dd></div>
           <div><dt className="inline">Flex</dt><dd className="inline ml-1.5 text-ink">{fmt(flex)}</dd></div>
-          <div><dt className="inline">Style</dt><dd className="inline ml-1.5 text-ink">{fmt(perf)}</dd></div>
+          <div><dt className="inline">Style</dt><dd className="inline ml-1.5 text-ink">{fmt(style)}</dd></div>
         </dl>
       </div>
 
