@@ -149,15 +149,6 @@ export function BrowseClient({ rackets }: Props) {
               { value: 'price-desc', label: 'Price ↓' },
             ]}
           />
-          {activeFilterCount > 0 && (
-            <button
-              type="button"
-              onClick={clearAll}
-              className="text-dim hover:text-accent underline underline-offset-2"
-            >
-              Clear filters ({activeFilterCount})
-            </button>
-          )}
           <div className="flex-1" />
           <ViewSwitcher view={view} onChange={setView} />
           <label className="flex items-center gap-2">
@@ -170,6 +161,17 @@ export function BrowseClient({ rackets }: Props) {
               className="px-2.5 py-1.5 border border-rule rounded bg-sheet w-48 md:w-64"
             />
           </label>
+          <button
+            type="button"
+            onClick={clearAll}
+            aria-hidden={activeFilterCount === 0}
+            tabIndex={activeFilterCount === 0 ? -1 : 0}
+            className={`text-dim hover:text-accent underline underline-offset-2 whitespace-nowrap ${
+              activeFilterCount === 0 ? 'invisible' : ''
+            }`}
+          >
+            Clear filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
+          </button>
         </div>
       </div>
 
