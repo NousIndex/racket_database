@@ -44,6 +44,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <footer className="border-t border-rule mt-16">
           <div className="max-w-7xl mx-auto px-6 md:px-12 py-8 font-sans text-xs text-dim">
             Data compiled from manufacturer (Yonex US, Victor Global) and retailer (Badminton Warehouse) sources. Specs may vary by lot.
+            {' '}<a
+              href="https://ko-fi.com/psyche216"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-dim/70 hover:text-ink no-underline"
+              aria-label="Tip the editor on Ko-fi"
+            >· Tip the editor.</a>
           </div>
         </footer>
       </body>
